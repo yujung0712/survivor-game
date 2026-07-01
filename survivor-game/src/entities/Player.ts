@@ -16,4 +16,9 @@ export class Player {
   public setPosition(x: number, y: number) {
     this.container.position.set(x, y);
   }
+
+  public move(dx: number, dy: number) {
+    this.container.x += dx;
+    this.container.y += dy;
+}
 }
