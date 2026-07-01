@@ -1,14 +1,34 @@
 import { Container, Point } from "pixi.js";
 
 export class Camera {
-  private world: Container;
+  private readonly world: Container;
 
   constructor(world: Container) {
     this.world = world;
   }
 
-  public follow(target: Point, screenWidth: number, screenHeight: number) {
-    this.world.x = screenWidth / 2 - target.x;
-    this.world.y = screenHeight / 2 - target.y;
+  public moveTo(
+    x: number,
+    y: number,
+    screenWidth: number,
+    screenHeight: number
+  ) {
+    this.world.position.set(
+      screenWidth / 2 - x,
+      screenHeight / 2 - y
+    );
+  }
+
+  public follow(
+    target: Point,
+    screenWidth: number,
+    screenHeight: number
+  ) {
+    this.moveTo(
+      target.x,
+      target.y,
+      screenWidth,
+      screenHeight
+    );
   }
 }

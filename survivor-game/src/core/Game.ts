@@ -15,6 +15,14 @@ export class Game {
 
     this.app.stage.addChild(this.world.container);
 
+    // Commit 2에서는 임시로 월드를 화면 중앙에 둔다.
+   this.camera.moveTo(
+  0,
+  0,
+  this.app.screen.width,
+  this.app.screen.height
+);
+
     this.createOrigin();
   }
 
