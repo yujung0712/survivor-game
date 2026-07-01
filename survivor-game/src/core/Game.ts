@@ -1,3 +1,4 @@
+import { Enemy } from "../entities/Enemy";
 import { Input } from "../systems/Input";
 import { Player } from "../entities/Player";
 import { Application, Graphics } from "pixi.js";
@@ -10,6 +11,7 @@ export class Game {
   public readonly world: World;
   public readonly camera: Camera;
   public readonly input: Input;
+  public readonly enemy: Enemy;
 
 constructor(app: Application) {
     this.input = new Input();
@@ -25,6 +27,12 @@ constructor(app: Application) {
     this.player = new Player();
     this.player.setPosition(0, 0);
 
+    this.enemy = new Enemy();
+
+this.enemy.setPosition(300, 0);
+
+this.world.add(this.enemy.container);
+
     this.world.add(this.player.container);
 
     this.camera.moveTo(
@@ -38,7 +46,7 @@ constructor(app: Application) {
     this.update();
 });
 
-    this.createOrigin();
+   
 }
   private update() {
     const speed = 4;
@@ -46,38 +54,41 @@ constructor(app: Application) {
     let dx = 0;
     let dy = 0;
 
-    if (this.input.isKeyDown("KeyW")) {
-        dy -= speed;
-    }
-
-    if (this.input.isKeyDown("KeyS")) {
-        dy += speed;
-    }
-
-    if (this.input.isKeyDown("KeyA")) {
-        dx -= speed;
-    }
-
-    if (this.input.isKeyDown("KeyD")) {
-        dx += speed;
-    }
+    if (this.input.isKeyDown("KeyW")) dy -= speed;
+    if (this.input.isKeyDown("KeyS")) dy += speed;
+    if (this.input.isKeyDown("KeyA")) dx -= speed;
+    if (this.input.isKeyDown("KeyD")) dx += speed;
 
     this.player.move(dx, dy);
 
-    this.camera.follow(
-    this.player.x,
-    this.player.y,
-    this.app.screen.width,
-    this.app.screen.height
-);
+    this.enemy.moveToward(
+        this.player.x,
+        this.player.y,
+        2
+    );
 
+    if (this.isColliding()) {
+        console.log("💥 COLLISION!");
+    }
+
+    this.camera.follow(
+        this.player.x,
+        this.player.y,
+        this.app.screen.width,
+        this.app.screen.height
+    );
 }
 
-  private createOrigin() {
-    const point = new Graphics()
-      .circle(0, 0, 8)
-      .fill(0xff0000);
+private isColliding(): boolean {
+    const dx = this.player.x - this.enemy.container.x;
+    const dy = this.player.y - this.enemy.container.y;
 
-    this.world.add(point);
-  }
+    const distance = Math.hypot(dx, dy);
+
+    const playerRadius = 16;
+    const enemyRadius = 14;
+
+    return distance < playerRadius + enemyRadius;
+}
+
 }
