@@ -1,13 +1,15 @@
+import { Player } from "../entities/Player";
 import { Application, Graphics } from "pixi.js";
 import { World } from "./World";
 import { Camera } from "./Camera";
 
 export class Game {
+  public readonly player: Player;
   public readonly app: Application;
   public readonly world: World;
   public readonly camera: Camera;
 
-  constructor(app: Application) {
+constructor(app: Application) {
     this.app = app;
 
     this.world = new World();
@@ -15,17 +17,20 @@ export class Game {
 
     this.app.stage.addChild(this.world.container);
 
-    // Commit 2에서는 임시로 월드를 화면 중앙에 둔다.
-   this.camera.moveTo(
-  0,
-  0,
-  this.app.screen.width,
-  this.app.screen.height
-);
+    this.player = new Player();
+    this.player.setPosition(0, 0);
+
+    this.world.add(this.player.container);
+
+    this.camera.moveTo(
+        0,
+        0,
+        this.app.screen.width,
+        this.app.screen.height
+    );
 
     this.createOrigin();
-  }
-
+}
   private createOrigin() {
     const point = new Graphics()
       .circle(0, 0, 8)
