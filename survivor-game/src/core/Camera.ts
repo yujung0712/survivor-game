@@ -1,4 +1,4 @@
-import { Container, Point } from "pixi.js";
+import { Container } from "pixi.js";
 
 export class Camera {
   private readonly world: Container;
@@ -20,15 +20,11 @@ export class Camera {
   }
 
   public follow(
-    target: Point,
+    x: number,
+    y: number,
     screenWidth: number,
     screenHeight: number
   ) {
-    this.moveTo(
-      target.x,
-      target.y,
-      screenWidth,
-      screenHeight
-    );
+    this.moveTo(x, y, screenWidth, screenHeight);
   }
 }

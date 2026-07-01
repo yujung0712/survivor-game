@@ -63,6 +63,14 @@ constructor(app: Application) {
     }
 
     this.player.move(dx, dy);
+
+    this.camera.follow(
+    this.player.x,
+    this.player.y,
+    this.app.screen.width,
+    this.app.screen.height
+);
+
 }
 
   private createOrigin() {

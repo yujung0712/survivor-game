@@ -13,6 +13,15 @@ export class Player {
     this.container.addChild(body);
   }
 
+
+  public get x(): number {
+  return this.container.x;
+}
+
+public get y(): number {
+  return this.container.y;
+}
+
   public setPosition(x: number, y: number) {
     this.container.position.set(x, y);
   }
