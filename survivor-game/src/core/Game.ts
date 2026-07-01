@@ -84,6 +84,8 @@ export class Game {
       bullet.update();
     }
 
+    this.checkBulletEnemyCollision();
+
     // ======================
     // 4. Collision (Player-Enemy)
     // ======================
@@ -141,4 +143,29 @@ export class Game {
     this.bullets.push(bullet);
     this.world.add(bullet.container);
   }
+
+  private checkBulletEnemyCollision() {
+    const enemyRadius = 14;
+    const bulletRadius = 4;
+
+    for (const bullet of this.bullets) {
+        for (const enemy of [this.enemy]) {
+
+            const dx = bullet.container.x - enemy.container.x;
+            const dy = bullet.container.y - enemy.container.y;
+
+            const distance = Math.hypot(dx, dy);
+
+            if (distance < bulletRadius + enemyRadius) {
+                console.log("💥 ENEMY HIT!");
+
+                // Enemy 제거
+                this.world.container.removeChild(enemy.container);
+
+                // Enemy 위치 초기화 (임시 처리)
+                enemy.setPosition(9999, 9999);
+            }
+        }
+    }
+}
 }
