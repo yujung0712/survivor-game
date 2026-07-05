@@ -3,8 +3,12 @@ import { Container, Graphics } from "pixi.js";
 export class Enemy {
   public readonly container: Container;
 
+  private hp: number;
+
   constructor() {
     this.container = new Container();
+
+    this.hp = 3;
 
     const body = new Graphics()
       .circle(0, 0, 14)
@@ -17,7 +21,11 @@ export class Enemy {
     this.container.position.set(x, y);
   }
 
-  public moveToward(targetX: number, targetY: number, speed: number) {
+  public moveToward(
+    targetX: number,
+    targetY: number,
+    speed: number
+  ) {
     const dx = targetX - this.container.x;
     const dy = targetY - this.container.y;
 
@@ -27,5 +35,15 @@ export class Enemy {
 
     this.container.x += (dx / distance) * speed;
     this.container.y += (dy / distance) * speed;
+  }
+
+  public takeDamage(amount: number) {
+    this.hp -= amount;
+
+    console.log("Enemy HP:", this.hp);
+  }
+
+  public isDead(): boolean {
+    return this.hp <= 0;
   }
 }

@@ -1,9 +1,13 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Application } from "pixi.js";
 import { Game } from "../core/Game";
+import { LevelUpModal } from "./LevelUpModal";
 
 export default function GameScreen() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const gameRef = useRef<Game | null>(null);
+
+  const [levelUp, setLevelUp] = useState(false);
 
   useEffect(() => {
     let app: Application | null = null;
@@ -19,7 +23,13 @@ export default function GameScreen() {
 
       containerRef.current?.appendChild(app.canvas);
 
-      new Game(app);
+      const game = new Game(app);
+      gameRef.current = game;
+
+      // ✅ 레벨업 연결 핵심
+      game.setLevelUpCallback(() => {
+        setLevelUp(true);
+      });
     };
 
     init();
@@ -29,5 +39,21 @@ export default function GameScreen() {
     };
   }, []);
 
-  return <div ref={containerRef} style={{ width: "100vw", height: "100vh" }} />;
+  return (
+    <div>
+      <div ref={containerRef} style={{ width: "100vw", height: "100vh" }} />
+
+      {levelUp && (
+        <LevelUpModal
+          onSelect={(weapon) => {
+            console.log("선택:", weapon);
+
+            setLevelUp(false);
+
+            // 👉 다음 Commit에서 여기서 무기 적용
+          }}
+        />
+      )}
+    </div>
+  );
 }

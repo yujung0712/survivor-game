@@ -1,3 +1,4 @@
+import { Exp } from "../entities/Exp";
 import { Bullet } from "../entities/Bullet";
 import { Enemy } from "../entities/Enemy";
 import { Input } from "../systems/Input";
@@ -13,10 +14,22 @@ export class Game {
   public readonly input: Input;
 
   public readonly player: Player;
-  public readonly enemy: Enemy;
+
+  // Enemy 배열
+  private enemies: Enemy[] = [];
 
   private bullets: Bullet[] = [];
+
+  private exps: Exp[] = [];
+
   private attackTimer = 0;
+  private spawnTimer = 0;
+
+  private exp = 0;
+  private level = 1;
+  private expToNextLevel = 3;
+
+  private onLevelUpCallback: (() => void) | null = null;
 
   constructor(app: Application) {
     this.app = app;
@@ -28,144 +41,340 @@ export class Game {
 
     this.app.stage.addChild(this.world.container);
 
-    // Player
     this.player = new Player();
     this.player.setPosition(0, 0);
+
     this.world.add(this.player.container);
 
-    // Enemy (임시 1개)
-    this.enemy = new Enemy();
-    this.enemy.setPosition(300, 0);
-    this.world.add(this.enemy.container);
+    // 시작 적
+    for (let i = 0; i < 5; i++) {
+      this.spawnEnemy();
+    }
 
-    // Camera 초기 위치
-    this.camera.moveTo(
-      0,
-      0,
-      this.app.screen.width,
-      this.app.screen.height
+    this.app.ticker.add(() => this.update());
+  }
+
+  public setLevelUpCallback(cb: () => void) {
+    this.onLevelUpCallback = cb;
+  }
+
+  private gainExp(amount: number) {
+    this.exp += amount;
+
+    console.log(
+      `EXP : ${this.exp} / ${this.expToNextLevel}`
     );
 
-    // Game Loop
-    this.app.ticker.add(() => {
-      this.update();
-    });
+    if (this.exp >= this.expToNextLevel) {
+      this.levelUp();
+    }
   }
+
+  private levelUp() {
+    this.level++;
+
+    this.exp = 0;
+
+    this.expToNextLevel += 2;
+
+    console.log("LEVEL UP");
+
+    this.onLevelUpCallback?.();
+  }
+
+  // ==========================
+  // Enemy Spawn
+  // ==========================
+
+  private spawnEnemy() {
+    const enemy = new Enemy();
+
+    const radius = 700;
+
+    const angle = Math.random() * Math.PI * 2;
+
+    const x =
+      this.player.x +
+      Math.cos(angle) * radius;
+
+    const y =
+      this.player.y +
+      Math.sin(angle) * radius;
+
+    enemy.setPosition(x, y);
+
+    this.enemies.push(enemy);
+
+    this.world.add(enemy.container);
+  }
+
+  // ==========================
+  // 가장 가까운 Enemy 찾기
+  // ==========================
+
+  private getNearestEnemy(): Enemy | null {
+    if (this.enemies.length === 0)
+      return null;
+
+    let nearest = this.enemies[0];
+
+    let min = Infinity;
+
+    for (const enemy of this.enemies) {
+      const dx =
+        enemy.container.x -
+        this.player.x;
+
+      const dy =
+        enemy.container.y -
+        this.player.y;
+
+      const d = Math.hypot(dx, dy);
+
+      if (d < min) {
+        min = d;
+        nearest = enemy;
+      }
+    }
+
+    return nearest;
+  }
+
+  // ==========================
+  // Shoot
+  // ==========================
+
+  private shoot() {
+    const target =
+      this.getNearestEnemy();
+
+    if (!target) return;
+
+    const bullet = new Bullet(
+      this.player.x,
+      this.player.y,
+      target.container.x,
+      target.container.y
+    );
+
+    this.bullets.push(bullet);
+
+    this.world.add(
+      bullet.container
+    );
+  }
+
+  // ==========================
+  // UPDATE
+  // ==========================
 
   private update() {
     const speed = 4;
 
-    // ======================
-    // 1. Input → Player 이동
-    // ======================
     let dx = 0;
     let dy = 0;
 
-    if (this.input.isKeyDown("KeyW")) dy -= speed;
-    if (this.input.isKeyDown("KeyS")) dy += speed;
-    if (this.input.isKeyDown("KeyA")) dx -= speed;
-    if (this.input.isKeyDown("KeyD")) dx += speed;
+    if (this.input.isKeyDown("KeyW"))
+      dy -= speed;
+
+    if (this.input.isKeyDown("KeyS"))
+      dy += speed;
+
+    if (this.input.isKeyDown("KeyA"))
+      dx -= speed;
+
+    if (this.input.isKeyDown("KeyD"))
+      dx += speed;
 
     this.player.move(dx, dy);
 
-    // ======================
-    // 2. Enemy 추적 AI
-    // ======================
-    this.enemy.moveToward(
+    // Enemy 이동
+    for (const enemy of this.enemies) {
+      enemy.moveToward(
+        this.player.x,
+        this.player.y,
+        2
+      );
+    }
+
+    // Bullet 이동
+    for (let i = this.bullets.length - 1; i >= 0; i--) {
+  const bullet = this.bullets[i];
+
+  bullet.update();
+
+  if (
+    bullet.isOutOfRange(
       this.player.x,
-      this.player.y,
-      2
+      this.player.y
+    )
+  ) {
+    this.world.container.removeChild(
+      bullet.container
     );
 
-    // ======================
-    // 3. Bullet update
-    // ======================
-    for (const bullet of this.bullets) {
-      bullet.update();
+    this.bullets.splice(i, 1);
+  }
+}
+
+    // Spawn Timer
+    this.spawnTimer++;
+
+    if (this.spawnTimer > 60) {
+      this.spawnTimer = 0;
+
+      this.spawnEnemy();
+    }
+
+    // Attack Timer
+    this.attackTimer++;
+
+    if (this.attackTimer > 20) {
+      this.attackTimer = 0;
+
+      this.shoot();
     }
 
     this.checkBulletEnemyCollision();
 
-    // ======================
-    // 4. Collision (Player-Enemy)
-    // ======================
-    if (this.isColliding()) {
-      console.log("💥 COLLISION!");
-    }
+    this.checkExpAbsorption();
 
-    // ======================
-    // 5. Camera Follow
-    // ======================
     this.camera.follow(
       this.player.x,
       this.player.y,
       this.app.screen.width,
       this.app.screen.height
     );
-
-    // ======================
-    // 6. Auto Attack
-    // ======================
-    this.attackTimer++;
-
-    if (this.attackTimer > 20) {
-      this.attackTimer = 0;
-      this.shoot();
-    }
   }
-
-  // ======================
-  // Collision check
-  // ======================
-  private isColliding(): boolean {
-    const dx = this.player.x - this.enemy.container.x;
-    const dy = this.player.y - this.enemy.container.y;
-
-    const distance = Math.hypot(dx, dy);
-
-    const playerRadius = 16;
-    const enemyRadius = 14;
-
-    return distance < playerRadius + enemyRadius;
-  }
-
-  // ======================
-  // Bullet 생성
-  // ======================
-  private shoot() {
-    const bullet = new Bullet(
-      this.player.x,
-      this.player.y,
-      this.enemy.container.x,
-      this.enemy.container.y
-    );
-
-    this.bullets.push(bullet);
-    this.world.add(bullet.container);
-  }
+    // ==========================
+  // Bullet vs Enemy
+  // ==========================
 
   private checkBulletEnemyCollision() {
     const enemyRadius = 14;
     const bulletRadius = 4;
 
-    for (const bullet of this.bullets) {
-        for (const enemy of [this.enemy]) {
+    for (
+      let b = this.bullets.length - 1;
+      b >= 0;
+      b--
+    ) {
+      const bullet = this.bullets[b];
 
-            const dx = bullet.container.x - enemy.container.x;
-            const dy = bullet.container.y - enemy.container.y;
+      let hit = false;
 
-            const distance = Math.hypot(dx, dy);
+      for (
+        let e = this.enemies.length - 1;
+        e >= 0;
+        e--
+      ) {
+        const enemy = this.enemies[e];
 
-            if (distance < bulletRadius + enemyRadius) {
-                console.log("💥 ENEMY HIT!");
+        const dx =
+          bullet.container.x -
+          enemy.container.x;
 
-                // Enemy 제거
-                this.world.container.removeChild(enemy.container);
+        const dy =
+          bullet.container.y -
+          enemy.container.y;
 
-                // Enemy 위치 초기화 (임시 처리)
-                enemy.setPosition(9999, 9999);
-            }
+        const distance = Math.hypot(
+          dx,
+          dy
+        );
+
+        if (
+          distance <
+          enemyRadius + bulletRadius
+        ) {
+          enemy.takeDamage(1);
+
+          // 총알 제거
+          this.world.container.removeChild(
+            bullet.container
+          );
+
+          this.bullets.splice(b, 1);
+
+          hit = true;
+
+          // 적 죽음
+          if (enemy.isDead()) {
+            console.log("Enemy Dead");
+
+            const exp = new Exp(
+              enemy.container.x,
+              enemy.container.y
+            );
+
+            this.exps.push(exp);
+
+            this.world.add(exp.container);
+
+            this.world.container.removeChild(
+              enemy.container
+            );
+
+            this.enemies.splice(e, 1);
+          }
+
+          break;
         }
+      }
+
+      if (hit) continue;
     }
-}
+  }
+
+  // ==========================
+  // EXP 흡수
+  // ==========================
+
+  private checkExpAbsorption() {
+    for (
+      let i = this.exps.length - 1;
+      i >= 0;
+      i--
+    ) {
+      const exp = this.exps[i];
+
+      const dx =
+        this.player.x -
+        exp.container.x;
+
+      const dy =
+        this.player.y -
+        exp.container.y;
+
+      const distance =
+        Math.hypot(dx, dy);
+
+      const magnetRange = 120;
+
+      const pickupRadius = 45;
+
+      if (
+        distance < magnetRange &&
+        distance > 0
+      ) {
+        const speed = 3;
+
+        exp.container.x +=
+          (dx / distance) * speed;
+
+        exp.container.y +=
+          (dy / distance) * speed;
+      }
+
+      if (distance < pickupRadius) {
+        this.gainExp(1);
+
+        this.world.container.removeChild(
+          exp.container
+        );
+
+        this.exps.splice(i, 1);
+      }
+    }
+  }
 }
