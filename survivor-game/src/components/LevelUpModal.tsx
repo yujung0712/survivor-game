@@ -3,16 +3,21 @@ import React from "react";
 type Weapon = "FIRE" | "ICE" | "LIGHTNING";
 
 interface Props {
+  timeLeft: number;
   onSelect: (weapon: Weapon) => void;
 }
 
-export const LevelUpModal: React.FC<Props> = ({ onSelect }) => {
+export const LevelUpModal: React.FC<Props> = ({ timeLeft, onSelect }) => {
   const cards: Weapon[] = ["FIRE", "ICE", "LIGHTNING"];
 
   return (
     <div style={styles.overlay}>
       <div style={styles.container}>
         <h2>LEVEL UP!</h2>
+
+<p style={{ marginTop: 10 }}>
+  {timeLeft}초 남음
+</p>
 
         <div style={styles.cards}>
           {cards.map((card) => (
@@ -57,4 +62,6 @@ const styles: any = {
     padding: 20,
     cursor: "pointer",
   },
+
+  
 };

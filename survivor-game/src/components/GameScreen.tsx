@@ -8,6 +8,37 @@ export default function GameScreen() {
   const gameRef = useRef<Game | null>(null);
 
   const [levelUp, setLevelUp] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(15);
+
+
+  useEffect(() => {
+  if (!levelUp) return;
+
+  setTimeLeft(15);
+
+  const timer = setInterval(() => {
+    setTimeLeft((prev) => {
+      if (prev <= 1) {
+        clearInterval(timer);
+
+        const cards = ["FIRE", "ICE", "LIGHTNING"] as const;
+        const random =
+          cards[Math.floor(Math.random() * cards.length)];
+
+        console.log("자동 선택:", random);
+
+        gameRef.current?.resumeGame();
+        setLevelUp(false);
+
+        return 15;
+      }
+
+      return prev - 1;
+    });
+  }, 1000);
+
+  return () => clearInterval(timer);
+}, [levelUp]);
 
   useEffect(() => {
     let app: Application | null = null;
@@ -29,6 +60,7 @@ export default function GameScreen() {
       // ✅ 레벨업 연결 핵심
       game.setLevelUpCallback(() => {
         setLevelUp(true);
+        setTimeLeft(15);
       });
     };
 
@@ -45,14 +77,15 @@ export default function GameScreen() {
 
       {levelUp && (
         <LevelUpModal
-          onSelect={(weapon) => {
-            console.log("선택:", weapon);
+  timeLeft={timeLeft}
+  onSelect={(weapon) => {
+    console.log("선택:", weapon);
 
-            setLevelUp(false);
+    gameRef.current?.resumeGame();
 
-            // 👉 다음 Commit에서 여기서 무기 적용
-          }}
-        />
+    setLevelUp(false);
+  }}
+/>
       )}
     </div>
   );

@@ -6,6 +6,7 @@ import { Player } from "../entities/Player";
 import { Application } from "pixi.js";
 import { World } from "./World";
 import { Camera } from "./Camera";
+import { WeaponManager } from "../systems/WeaponManager";
 
 export class Game {
   public readonly app: Application;
@@ -14,6 +15,7 @@ export class Game {
   public readonly input: Input;
 
   public readonly player: Player;
+  public readonly weaponManager: WeaponManager;
 
   // Enemy 배열
   private enemies: Enemy[] = [];
@@ -32,6 +34,7 @@ export class Game {
   private onLevelUpCallback: (() => void) | null = null;
 
   constructor(app: Application) {
+    this.weaponManager = new WeaponManager();
     this.app = app;
 
     this.input = new Input();
@@ -70,6 +73,11 @@ export class Game {
     }
   }
 
+
+  public resumeGame() {
+    this.paused = false;
+}
+
   private levelUp() {
     this.level++;
 
@@ -78,6 +86,8 @@ export class Game {
     this.expToNextLevel += 2;
 
     console.log("LEVEL UP");
+
+    this.paused = true;
 
     this.onLevelUpCallback?.();
   }
@@ -167,12 +177,15 @@ export class Game {
   // ==========================
   // UPDATE
   // ==========================
+  private paused = false;
 
   private update() {
     const speed = 4;
 
     let dx = 0;
     let dy = 0;
+    
+    if (this.paused) return;
 
     if (this.input.isKeyDown("KeyW"))
       dy -= speed;
